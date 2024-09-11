@@ -65,22 +65,22 @@ def get_closer_year(month):
     Returns:
       The closer year.
     """
-    return 2024
-
     today = datetime.date.today()
     current_year = today.year
 
-    # print(month)
-    # print(today.month)
+    print(month)  # 5
+    print(today.month)  # 9
 
-    if month < today.month:
-        target_year = current_year - 1
-    else:
-        target_year = current_year
+    # Create date objects for the given month in the current year and next year
+    current_year_date = datetime.date(current_year, month, 1)
+    next_year_date = datetime.date(current_year + 1, month, 1)
 
-    difference = target_year - current_year
+    # Calculate the difference in days between today and the two possible dates
+    diff_current_year = abs((current_year_date - today).days)
+    diff_next_year = abs((next_year_date - today).days)
 
-    if abs(difference) <= 6:
-        return target_year
-    else:
+    # Return the year that is closer
+    if diff_current_year <= diff_next_year:
         return current_year
+    else:
+        return current_year + 1
