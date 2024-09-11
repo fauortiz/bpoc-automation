@@ -7,12 +7,9 @@ import datetime
 import calendar
 import os
 import pyperclip
-from utils import (
-    verify_date,
-    get_closer_year,
-    get_task_timeframes,
-    format_for_spreadsheet,
-)
+from utils import verify_date, get_closer_year, format_for_spreadsheet
+from pprint import pprint
+from WorkDateTime import WorkDateTime
 
 
 def make_monthly_report(*args):
@@ -54,23 +51,22 @@ def make_monthly_report(*args):
 
         if len(args[0]) != 1 or int(args[0][0]) not in range(1, 13):
             raise Exception("ERROR: Invalid month number.")
+
         month_number = int(args[0][0])
         year = get_closer_year(month_number)
-
         month_start = datetime.datetime(
             year, month_number, 1
         )  # Set day to 1 for consistency
-
         days_in_month = calendar.monthrange(year, month_number)[1]
         month_end = month_start + datetime.timedelta(days=days_in_month - 1)
-
-        month_start = month_start.date()  # Replace with your desired date
+        month_start = month_start.date()
         month_end = month_end.date()
 
         all_tasks = []
         unique_tasks = OrderedDict()
         unique_dates = OrderedDict()
 
+        # process input
         for row in range(table.num_rows):
             date = table.cell(row, 0).value
 
@@ -115,6 +111,7 @@ def make_monthly_report(*args):
             else:
                 unique_dates[date]["total_weight"] += weight
 
+        # get total minutes per unique task
         for task_data in all_tasks:
             date = task_data["date"]
             task = task_data["task"]
@@ -127,62 +124,103 @@ def make_monthly_report(*args):
             # task_data["mins"] = task_mins
             unique_tasks[task]["total_mins"] += task_mins
 
-        dates_keys = list(unique_dates.keys())
-        dates_index = 0
+        # # populate the 'dates' object with date: minutes spent for that date.
+        # #   Example:
+        # #   {'Work on C03 v3': {
+        # #           'completion': 100.0,
+        # #           'total_mins': 560,
+        # #           'dates': {Date(2024, 9, 2): 480, ...},
+        # #   }
 
-        # for each task, in order...
+        # dates_keys = list(unique_dates.keys())
+        # dates_index = 0
+        # # for each task, in order...
+        # for task in unique_tasks:
+        #     while unique_tasks[task]["total_mins"] > 0:
+        #         task_mins = unique_tasks[task]["total_mins"]
+        #         # print(task, task_mins)
+        #         date = dates_keys[dates_index]
+        #         # print(date)
+        #         date_mins = unique_dates[date]["total_mins"]
+        #         # print(date_mins)
+
+        #         date_mins_after = date_mins - task_mins
+
+        #         if date_mins_after == 0:
+        #             # print("equal, next")
+        #             # the date is filled up, the task is completed on that day.
+        #             # record date and mins into unique_tasks, move to the next date, move to the next task
+        #             unique_tasks[task]["dates"][date] = task_mins
+        #             unique_tasks[task]["total_mins"] = 0
+
+        #             unique_dates[date]["total_mins"] = 0
+        #             dates_index += 1
+        #             break
+        #         if date_mins_after > 0:
+        #             # print("greater, stay on date")
+        #             # the date still has space, the task is completed on that day.
+        #             # record date and mins into unique_tasks, move to the next task, stay on same day, but update its remaining mins.
+        #             unique_tasks[task]["dates"][date] = task_mins
+        #             unique_tasks[task]["total_mins"] = 0
+
+        #             unique_dates[date]["total_mins"] = date_mins_after
+        #             break
+        #         if date_mins_after < 0:
+        #             # print("less then, carry over task")
+        #             # the date is filled up, the task is not yet completed.
+        #             # get mins left for the task, save that.
+        #             # record date and mins into unique_tasks, stay on this task, move to next day.
+        #             remaining_task_mins = task_mins - date_mins
+        #             unique_tasks[task]["dates"][date] = date_mins
+        #             unique_tasks[task]["total_mins"] = remaining_task_mins
+
+        #             unique_dates[date]["total_mins"] = 0
+        #             dates_index += 1
+
+        # REFERENCE
+        # pprint(unique_tasks)
+
+        def convert_date_to_workdt(list, date, time=None):
+            if time:
+                return WorkDateTime(
+                    list, date.year, date.month, date.day, time.hour, time.minute
+                )
+            return WorkDateTime(list, date.year, date.month, date.day)
+
+        timeframes = {}
+
+        date_index = 0
+        list_of_date_keys = list(unique_dates.keys())
+
+        # pprint(list_of_date_keys)
+
+        start_date = list_of_date_keys[date_index]
+        current_workdt = convert_date_to_workdt(list_of_date_keys, start_date)
+        print(current_workdt)
         for task in unique_tasks:
-            # {'Work on C03 v3': {
-            #       'completion': 100.0,
-            #       'total_mins': 560,
-            #       'dates': {Date(2024, 9, 2): 480, ...},
-            # }
-            while unique_tasks[task]["total_mins"] > 0:
-                task_mins = unique_tasks[task]["total_mins"]
-                # print(task, task_mins)
-                date = dates_keys[dates_index]
-                # print(date)
-                date_mins = unique_dates[date]["total_mins"]
-                # print(date_mins)
+            print(task)
 
-                date_mins_after = date_mins - task_mins
+            # set the current task's start as the previous end datetime
+            if task not in timeframes:
+                total_mins = unique_tasks[task]["total_mins"]
+                next_workdt = current_workdt + datetime.timedelta(minutes=total_mins)
+                total_workdays = total_mins / 60 / 9
+                timeframes[task] = (
+                    current_workdt.datetime,
+                    next_workdt.datetime,
+                    total_workdays,
+                )
 
-                if date_mins_after == 0:
-                    # print("equal, next")
-                    # the date is filled up, the task is completed on that day.
-                    # record date and mins into unique_tasks, move to the next date, move to the next task
-                    unique_tasks[task]["dates"][date] = task_mins
-                    unique_tasks[task]["total_mins"] = 0
+                current_workdt = current_workdt + datetime.timedelta(minutes=total_mins)
 
-                    unique_dates[date]["total_mins"] = 0
-                    dates_index += 1
-                    break
-                if date_mins_after > 0:
-                    # print("greater, stay on date")
-                    # the date still has space, the task is completed on that day.
-                    # record date and mins into unique_tasks, move to the next task, stay on same day, but update its remaining mins.
-                    unique_tasks[task]["dates"][date] = task_mins
-                    unique_tasks[task]["total_mins"] = 0
+        # TODO lunchbreak adjustments
 
-                    unique_dates[date]["total_mins"] = date_mins_after
-                    break
-                if date_mins_after < 0:
-                    # print("less then, carry over task")
-                    # the date is filled up, the task is not yet completed.
-                    # get mins left for the task, save that.
-                    # record date and mins into unique_tasks, stay on this task, move to next day.
-                    remaining_task_mins = task_mins - date_mins
-                    unique_tasks[task]["dates"][date] = date_mins
-                    unique_tasks[task]["total_mins"] = remaining_task_mins
-
-                    unique_dates[date]["total_mins"] = 0
-                    dates_index += 1
-
-        timeframes = get_task_timeframes(unique_tasks)
+        pprint(timeframes)
 
         for task in unique_tasks:
             unique_tasks[task]["begin"] = timeframes[task][0]
             unique_tasks[task]["end"] = timeframes[task][1]
+            unique_tasks[task]["duration"] = timeframes[task][2]
 
         monthly_string = format_for_spreadsheet(unique_tasks)
         pyperclip.copy(monthly_string)
@@ -191,7 +229,7 @@ def make_monthly_report(*args):
         print(f"Monthly report for {month_name} {year} copied to clipboard!")
 
     except Exception as e:
-        print(e)
+        raise (e)
 
 
 if __name__ == "__main__":
