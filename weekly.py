@@ -40,7 +40,7 @@ def make_weekly_task():
                 week_range[max] = date
 
             task = table.cell(row, 1).value
-            percentage = table.cell(row, 2).value
+            percentage = int(table.cell(row, 2).value)
 
             if task not in weekly_tasks:
                 weekly_tasks[task] = percentage

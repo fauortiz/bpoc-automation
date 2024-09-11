@@ -34,7 +34,7 @@ def make_daily_task(*args):
                 continue
 
             task = table.cell(row, 1).value
-            percentage = table.cell(row, 2).value
+            percentage = int(table.cell(row, 2).value)
 
             todays_work.append((task, percentage))
 

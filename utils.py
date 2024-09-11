@@ -6,21 +6,19 @@ from pendulum import DateTime as pendulumdatetime
 def format_work(data):
     if not isinstance(data[0], str):
         raise Exception("ERROR: Task missing.")
-    if not isinstance(data[1], float):
+    if not isinstance(data[1], int):
         raise Exception("ERROR: Percentage missing.")
 
     def format_percent_string(number):
-        return f"{number * 100:.0f}%"
+        return f"{number}%"
 
     return f"- {data[0]} {format_percent_string(data[1])}"
 
 
-def format_work_hipe(task, perc, sep=","):
-    if isinstance(perc, float):
-        fperc = f"{perc * 100:.0f}%"
-    else:
+def format_work_hipe(task, percentage, sep=","):
+    if not isinstance(percentage, int):
         raise Exception("ERROR: Percentage missing.")
-    return f"{task}{sep} {fperc}"
+    return f"{task}{sep} {percentage}%"
 
 
 def capitalize_first(s):
@@ -55,3 +53,34 @@ def verify_date(date):
         date = date.naive().date()
 
     return date
+
+
+# TODO super buggy
+def get_closer_year(month):
+    """Determines the year of the given month that is closer to today's date.
+
+    Args:
+      month: The given month (1-12).
+
+    Returns:
+      The closer year.
+    """
+    return 2024
+
+    today = datetime.date.today()
+    current_year = today.year
+
+    # print(month)
+    # print(today.month)
+
+    if month < today.month:
+        target_year = current_year - 1
+    else:
+        target_year = current_year
+
+    difference = target_year - current_year
+
+    if abs(difference) <= 6:
+        return target_year
+    else:
+        return current_year
