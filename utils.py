@@ -1,6 +1,7 @@
 import datetime
 import re
 from pendulum import DateTime as pendulumdatetime
+import platform
 
 
 def format_work(data):
@@ -26,8 +27,15 @@ def capitalize_first(s):
 
 
 def get_week_range_string(week_dates):
-    start = week_dates[min]
-    end = week_dates[max]
+    if platform.system() == "Windows":
+        start = week_dates["min"]
+        end = week_dates["max"]
+    elif platform.system() == "Darwin":
+        start = week_dates[min]
+        end = week_dates[max]
+    else:
+        raise NotImplementedError("Unsupported operating system")
+    
     if start.month != end.month:
         formatted_date_range = (
             f"{start.strftime('%B %d')} - {end.strftime('%B %d, %Y')}"
@@ -46,7 +54,13 @@ def get_week_range_string(week_dates):
 def verify_date(date):
     if isinstance(date, str):
         print(f"string date, parsing... {date}")
-        date = datetime.strptime(date, "%b %d, %Y").date()
+        if platform.system() == "Windows":
+            date = datetime.datetime.strptime(date, "%m/%d/%Y").date()
+        elif platform.system() == "Darwin":
+            date = datetime.strptime(date, "%m/%d/%y").date()
+        else:
+            raise NotImplementedError("Unsupported operating system")
+
 
     if isinstance(date, pendulumdatetime):
         # print(f"pendulum date, parsing... {date}")
