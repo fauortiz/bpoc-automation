@@ -7,8 +7,7 @@ import datetime
 import calendar
 import os
 import pyperclip
-from utils import verify_date, get_closer_year, format_for_spreadsheet
-from pprint import pprint
+from utils import verify_date, get_closer_year, format_for_spreadsheet, count_breaks
 from WorkDateTime import WorkDateTime
 
 
@@ -189,33 +188,40 @@ def make_monthly_report(*args):
 
         timeframes = {}
 
-        date_index = 0
         list_of_date_keys = list(unique_dates.keys())
 
         # pprint(list_of_date_keys)
 
-        start_date = list_of_date_keys[date_index]
+        start_date = list_of_date_keys[0]
         current_workdt = convert_date_to_workdt(list_of_date_keys, start_date)
-        print(current_workdt)
         for task in unique_tasks:
-            print(task)
-
+            if current_workdt.datetime.hour == 18:
+                current_workdt.adjust_to_next_workday()
+                print(current_workdt)
             # set the current task's start as the previous end datetime
-            if task not in timeframes:
-                total_mins = unique_tasks[task]["total_mins"]
-                next_workdt = current_workdt + datetime.timedelta(minutes=total_mins)
-                total_workdays = total_mins / 60 / 9
-                timeframes[task] = (
-                    current_workdt.datetime,
-                    next_workdt.datetime,
-                    total_workdays,
-                )
 
-                current_workdt = current_workdt + datetime.timedelta(minutes=total_mins)
+            total_mins = unique_tasks[task]["total_mins"]
+            next_workdt = current_workdt + datetime.timedelta(minutes=total_mins)
 
-        # TODO lunchbreak adjustments
+            break_count, _, _ = count_breaks(
+                current_workdt.datetime, next_workdt.datetime, list_of_date_keys
+            )
+            # print(break_count, current_workdt.datetime, a, next_workdt.datetime, b)
 
-        pprint(timeframes)
+            next_workdt = next_workdt + datetime.timedelta(hours=break_count)
+
+            total_workdays = total_mins / 60 / 8
+            timeframes[task] = (
+                current_workdt.datetime,
+                next_workdt.datetime,
+                total_workdays,
+            )
+
+            # set the start point for the next iteration
+            # current_workdt = current_workdt + datetime.timedelta(minutes=total_mins)
+            current_workdt = next_workdt
+
+        # pprint(timeframes)
 
         for task in unique_tasks:
             unique_tasks[task]["begin"] = timeframes[task][0]
@@ -234,3 +240,6 @@ def make_monthly_report(*args):
 
 if __name__ == "__main__":
     make_monthly_report(sys.argv[1:])
+
+# TODO possible bugs:
+# 1. it might show a start or end time within the lunch break, maybe?

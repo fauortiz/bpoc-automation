@@ -104,7 +104,7 @@ def format_for_spreadsheet(tasks):
     return output
 
 
-def count_breaks(start_datetime, end_datetime):
+def count_breaks(start_datetime, end_datetime, list_of_dates):
     # Define the time window for the break (12:00 PM to 1:00 PM)
     break_start_time = datetime.timedelta(hours=12)
     break_end_time = datetime.timedelta(hours=13)
@@ -122,39 +122,36 @@ def count_breaks(start_datetime, end_datetime):
 
     # Loop through each day
     while current_day <= end_day:
-        # Get the datetime range for the break on the current day
-        break_start_datetime = (
-            datetime.datetime.combine(current_day, datetime.time.min) + break_start_time
-        )
-        break_end_datetime = (
-            datetime.datetime.combine(current_day, datetime.time.min) + break_end_time
-        )
-
-        # Check if the datetime range overlaps with the break time
-        if (
-            start_datetime <= break_end_datetime
-            and end_datetime >= break_start_datetime
-        ):
-            break_count += 1
-
-            # Add 1 hour to the end_datetime
-            end_datetime += datetime.timedelta(hours=1)
-
-            # Update the final start and end datetime for output
-            final_start_datetime = start_datetime
-            final_end_datetime = end_datetime
-
-            # Prevent counting the same break again on the same day by setting start_datetime to the next day
-            start_datetime = datetime.datetime.combine(
-                current_day + datetime.timedelta(days=1), datetime.time.min
+        if current_day in list_of_dates:
+            # Get the datetime range for the break on the current day
+            break_start_datetime = (
+                datetime.datetime.combine(current_day, datetime.time.min)
+                + break_start_time
             )
-        else:
-            # If no break is hit, just move to the next day
-            start_datetime = datetime.datetime.combine(
-                current_day + datetime.timedelta(days=1), datetime.time.min
+            break_end_datetime = (
+                datetime.datetime.combine(current_day, datetime.time.min)
+                + break_end_time
             )
 
-        # Move to the next day
+            # Check if the datetime range overlaps with the break time
+            if (
+                start_datetime <= break_end_datetime
+                and end_datetime >= break_start_datetime
+            ):
+                break_count += 1
+
+                # Add 1 hour to the end_datetime
+                end_datetime += datetime.timedelta(hours=1)
+
+                # Update the final start and end datetime for output
+                # final_start_datetime = start_datetime
+                final_end_datetime = end_datetime
+
+        # Prevent counting the same break again on the same day by setting start_datetime to the next day
+        # If no break is hit, just move to the next day
+        start_datetime = datetime.datetime.combine(
+            current_day + datetime.timedelta(days=1), datetime.time.min
+        )
         current_day = start_datetime.date()
 
     # Output the count, and the resulting start and end datetimes

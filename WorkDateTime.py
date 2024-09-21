@@ -17,9 +17,21 @@ class WorkDateTime:
 
         def get_next_workday(dt, list_of_workdays):
             """Helper function to get the start of the next workday."""
-            # TODO list of workdays, from monthly.py
-            dt = dt + timedelta(days=1)
-            return dt.replace(hour=9, minute=0, second=0, microsecond=0)
+            # TODO use list of workdays, from monthly.py
+            # SHIT'S BUGGY
+
+            try:
+                index_of_next_day = (
+                    list_of_workdays.index(dt.date()) + 1
+                )  # Find the index of the value
+                dt = list_of_workdays[index_of_next_day]
+            except IndexError:
+                if not index_of_next_day == len(list_of_workdays):
+                    raise IndexError
+
+            # print(dt)  # returns 2024-09-03
+            # print(type(dt))  # returns <class 'pendulum.date.Date'>
+            return datetime(dt.year, dt.month, dt.day, 9, 0, 0)
 
         def get_end_of_workday(dt):
             """Helper function to get the end of the workday."""
@@ -72,6 +84,31 @@ class WorkDateTime:
             f"WorkdayDateTime({self.datetime.year}, {self.datetime.month}, {self.datetime.day}, "
             f"{self.datetime.hour}, {self.datetime.minute}, {self.datetime.second})"
         )
+
+    def adjust_to_next_workday(self):
+        """
+        Converts the datetime to 9am of the next workday if it's at 6pm of the current workday.
+        """
+        if self.datetime.hour == 18 and self.datetime.minute == 0:
+            next_workday = self.get_next_workday(self.datetime, self.list_of_workdays)
+            self.datetime = datetime(
+                next_workday.year, next_workday.month, next_workday.day, 9, 0, 0
+            )
+        return self
+
+    def get_next_workday(self, dt, list_of_workdays):
+        """Helper function to get the start of the next workday."""
+        try:
+            index_of_next_day = list_of_workdays.index(dt.date()) + 1
+            return list_of_workdays[index_of_next_day]
+        except IndexError:
+            if index_of_next_day == len(list_of_workdays):
+                # If we've reached the end of the list, we need to handle this case
+                # For now, we'll just return the first day of the next month
+                # You might want to adjust this logic based on your specific requirements
+                next_month = dt.replace(day=1) + timedelta(days=32)
+                return next_month.replace(day=1)
+            raise IndexError("Unexpected error in get_next_workday")
 
 
 # # Create an instance of WorkdayDateTime
