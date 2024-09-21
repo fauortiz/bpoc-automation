@@ -27,8 +27,15 @@ def capitalize_first(s):
 
 
 def get_week_range_string(week_dates):
-    start = week_dates[min]
-    end = week_dates[max]
+    if platform.system() == "Windows":
+        start = week_dates["min"]
+        end = week_dates["max"]
+    elif platform.system() == "Darwin":
+        start = week_dates[min]
+        end = week_dates[max]
+    else:
+        raise NotImplementedError("Unsupported operating system")
+    
     if start.month != end.month:
         formatted_date_range = (
             f"{start.strftime('%B %d')} - {end.strftime('%B %d, %Y')}"

@@ -3,12 +3,11 @@
 from collections import OrderedDict
 import sys
 import pyexcel_ods
-import datetime
+import datetime 
 import calendar
 import os
 import pyperclip
-from utils import verify_date, get_closer_year, format_for_spreadsheet
-from pprint import pprint
+from utils import verify_date, get_closer_year, format_for_spreadsheet, count_breaks
 from WorkDateTime import WorkDateTime
 
 
@@ -43,15 +42,21 @@ def make_monthly_report(*args):
     """
     try:
         home_dir = os.path.expanduser("~")
-        desktop_path = os.path.join(home_dir, "OneDrive" , "Desktop")
-        calc_path = os.path.join(desktop_path, "reports.ods")
+        desktop_path = os.path.join(home_dir, "OneDrive","Desktop")
+        ods_path = os.path.join(desktop_path, "reports.ods")
 
-        if len(args) == 0 or int(args[0]) not in range(1, 13):
+        # Read the .ods file
+        data = pyexcel_ods.get_data(ods_path)
+        sheet = data[list(data.keys())[0]]  # Get the first sheet
+
+        if len(args[0]) != 1 or int(args[0][0]) not in range(1, 13):
             raise Exception("ERROR: Invalid month number.")
 
-        month_number = int(args[0])
+        month_number = int(args[0][0])
         year = get_closer_year(month_number)
-        month_start = datetime.datetime(year, month_number, 1)  # Set day to 1 for consistency
+        month_start = datetime.datetime(
+            year, month_number, 1
+        )  # Set day to 1 for consistency
         days_in_month = calendar.monthrange(year, month_number)[1]
         month_end = month_start + datetime.timedelta(days=days_in_month - 1)
         month_start = month_start.date()
@@ -61,11 +66,7 @@ def make_monthly_report(*args):
         unique_tasks = OrderedDict()
         unique_dates = OrderedDict()
 
-        # Read the .ods file
-        data = pyexcel_ods.get_data(calc_path)
-        sheet = data[list(data.keys())[0]]  # Get the first sheet
-
-        # Process input
+        # process input
         for row in sheet:
             if len(row) < 4:
                 continue
@@ -77,7 +78,7 @@ def make_monthly_report(*args):
 
             date = verify_date(date)
 
-            # Only use the indicated month's dates
+            # only use the indicated month's dates
             if not month_start <= date <= month_end:
                 continue
 
@@ -113,7 +114,7 @@ def make_monthly_report(*args):
             else:
                 unique_dates[date]["total_weight"] += weight
 
-        # Get total minutes per unique task
+        # get total minutes per unique task
         for task_data in all_tasks:
             date = task_data["date"]
             task = task_data["task"]
@@ -134,23 +135,32 @@ def make_monthly_report(*args):
 
         timeframes = {}
 
-        date_index = 0
         list_of_date_keys = list(unique_dates.keys())
 
-        start_date = list_of_date_keys[date_index]
+        start_date = list_of_date_keys[0]
         current_workdt = convert_date_to_workdt(list_of_date_keys, start_date)
         for task in unique_tasks:
-            if task not in timeframes:
-                total_mins = unique_tasks[task]["total_mins"]
-                next_workdt = current_workdt + datetime.timedelta(minutes=total_mins)
-                total_workdays = total_mins / 60 / 9
-                timeframes[task] = (
-                    current_workdt.datetime,
-                    next_workdt.datetime,
-                    total_workdays,
-                )
+            if current_workdt.datetime.hour == 18:
+                current_workdt.adjust_to_next_workday()
+                print(current_workdt)
 
-                current_workdt = current_workdt + datetime.timedelta(minutes=total_mins)
+            total_mins = unique_tasks[task]["total_mins"]
+            next_workdt = current_workdt + datetime.timedelta(minutes=total_mins)
+
+            break_count, _, _ = count_breaks(
+                current_workdt.datetime, next_workdt.datetime, list_of_date_keys
+            )
+
+            next_workdt = next_workdt + datetime.timedelta(hours=break_count)
+
+            total_workdays = total_mins / 60 / 8
+            timeframes[task] = (
+                current_workdt.datetime,
+                next_workdt.datetime,
+                total_workdays,
+            )
+
+            current_workdt = next_workdt
 
         for task in unique_tasks:
             unique_tasks[task]["begin"] = timeframes[task][0]
@@ -164,8 +174,8 @@ def make_monthly_report(*args):
         print(f"Monthly report for {month_name} {year} copied to clipboard!")
 
     except Exception as e:
-        print(e)
+        raise (e)
 
 
 if __name__ == "__main__":
-    make_monthly_report(*sys.argv[1:])
+    make_monthly_report(sys.argv[1:])

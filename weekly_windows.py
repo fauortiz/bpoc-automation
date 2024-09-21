@@ -36,7 +36,7 @@ def make_weekly_task(start_date=None, end_date=None):
         week_dates = [start_of_this_week + datetime.timedelta(days=i) for i in range((end_of_this_week - start_of_this_week).days + 1)]
 
         weekly_tasks = {}
-        week_range = {"start_date": datetime.date.max, "end_date": datetime.date.min}
+        week_range = {"min": datetime.date.max, "max": datetime.date.min}
 
         for row in sheet:
             if len(row) < 3:
@@ -52,10 +52,10 @@ def make_weekly_task(start_date=None, end_date=None):
             if not any(date == weekdate for weekdate in week_dates):
                 continue
 
-            if week_range["start_date"] > date:
-                week_range["start_date"] = date
-            if week_range["end_date"] < date:
-                week_range["end_date"] = date
+            if week_range["min"] > date:
+                week_range["min"] = date
+            if week_range["max"] < date:
+                week_range["max"] = date
 
             task = row[1]
             percentage = int(row[2])
