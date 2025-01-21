@@ -21,6 +21,10 @@ def format_work_hipe(task, percentage, sep=","):
     return f"{task}{sep} {percentage}%"
 
 
+def format_work_hipe_no_percent(task, sep=","):
+    return f"{task}"
+
+
 def capitalize_first(s):
     return s[0].upper() + s[1:] if s else s
 

@@ -40,7 +40,10 @@ def make_weekly_task():
                 week_range[max] = date
 
             task = table.cell(row, 1).value
-            percentage = int(table.cell(row, 2).value)
+            percentage = table.cell(row, 2).value
+            percentage = int(percentage) if percentage is not None else 100
+            hours = table.cell(row, 6).value
+            hours = int(hours) if hours is not None else 1
 
             if task not in weekly_tasks:
                 weekly_tasks[task] = percentage
@@ -49,9 +52,15 @@ def make_weekly_task():
 
         week_range_str = get_week_range_string(week_range)
         title = "LRTechs"
-        hipe_weekly = "\n".join(
-            [f"- {format_work_hipe(task, perc, ":")}" for task, perc in weekly_tasks.items()]
-        )
+
+        # Format with percentages
+        # hipe_weekly = "\n".join(
+        #     [f"- {format_work_hipe(task, perc, ":")}" for task, perc in weekly_tasks.items()]
+        # )
+
+        # Format without percentages
+        hipe_weekly = "\n".join([f"- {task}" for task in weekly_tasks.keys()])
+
         weekly_string = f"{week_range_str}\n{title}\n{hipe_weekly}"
 
         pyperclip.copy(weekly_string)

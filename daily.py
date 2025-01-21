@@ -34,7 +34,8 @@ def make_daily_task(*args):
                 continue
 
             task = table.cell(row, 1).value
-            percentage = int(table.cell(row, 2).value)
+            percentage = table.cell(row, 2).value
+            percentage = int(percentage) if percentage is not None else 100
 
             todays_work.append((task, percentage))
 

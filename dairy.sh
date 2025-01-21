@@ -4,8 +4,7 @@
 VENV_PATH="/Users/hipejapaninc./Documents/report-maker/.venv"
 
 # Path to your Python script
-# SCRIPT_PATH="/Users/hipejapaninc./Documents/report-maker/daily.py"
-SCRIPT_PATH="/Users/hipejapaninc./Documents/report-maker/hris_daily.py"
+SCRIPT_PATH="/Users/hipejapaninc./Documents/report-maker/hris_dairy.py"
 
 
 # Activate the virtual environment
